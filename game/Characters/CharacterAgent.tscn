@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://gxnt86rhg3g7"]
+
+[ext_resource type="Script" path="res://game/Characters/CharacterAgent.cs" id="1_agent"]
+[ext_resource type="Texture2D" uid="uid://cjpi7gradni6d" path="res://game/Textures/astronaut1_placeholder.png" id="2_tex"]
+
+[node name="CharacterAgent" type="Node2D"]
+script = ExtResource("1_agent")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_tex")
+
+[node name="TaskLabel" type="Label" parent="."]
+offset_left = -60.0
+offset_top = -46.0
+offset_right = 60.0
+offset_bottom = -26.0
+horizontal_alignment = 1
+text = ""

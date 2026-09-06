@@ -1,0 +1,18 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- tests/ 为独立测试工程（xUnit），不参与游戏程序集编译 -->
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
+
+  <!-- 允许测试工程驱动模拟层内部状态 -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="RelayStation.Tests" />
+  </ItemGroup>
+</Project>
