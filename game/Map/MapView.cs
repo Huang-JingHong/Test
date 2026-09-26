@@ -85,13 +85,6 @@ public partial class MapView : Node2D
 
     /*****
     Date: 2026-09-06
-    Name: AtlasFacilitySlot
-    Description: 设施占位格图集坐标。
-    *****/
-    private static readonly Vector2I AtlasFacilitySlot = new(1, 2);
-
-    /*****
-    Date: 2026-09-06
     Name: AtlasHighlight
     Description: 悬停高亮图集坐标（半透明白）。
     *****/
@@ -190,7 +183,7 @@ public partial class MapView : Node2D
     Name: BackgroundTexturePath
     Description: 背景图资源路径（universe_background.png，铺满整张地图世界尺寸）。
     *****/
-    private const string BackgroundTexturePath = "res://game/Textures/universe_background.png";
+    private const string BackgroundTexturePath = "res://game/Textures/background/universe_background.png";
 
     /*****
     Date: 2026-09-06
@@ -252,15 +245,14 @@ public partial class MapView : Node2D
     {
         var texturePaths = new (Vector2I Atlas, string Path)[]
         {
-            (AtlasWall, "res://game/Textures/wall.png"),
-            (AtlasCorridor, "res://game/Textures/corridor_floor.png"),
-            (AtlasDoor, "res://game/Textures/door.png"),
-            (AtlasLiving, "res://game/Textures/livingroom_floor.png"),
-            (AtlasPower, "res://game/Textures/power_sector_floor.png"),
-            (AtlasLifeSupport, "res://game/Textures/support_sector_floor.png"),
-            (AtlasAirlockStorage, "res://game/Textures/airlock_and_storage_sector_floor.png"),
-            (AtlasCommunication, "res://game/Textures/communication_sector_floor.png"),
-            (AtlasFacilitySlot, "res://game/Textures/facility_placeholder.png"),
+            (AtlasWall, "res://game/Textures/terrain/wall/wall.png"),
+            (AtlasCorridor, "res://game/Textures/terrain/floor/corridor_floor.png"),
+            (AtlasDoor, "res://game/Textures/terrain/door.png"),
+            (AtlasLiving, "res://game/Textures/terrain/floor/livingroom_floor.png"),
+            (AtlasPower, "res://game/Textures/terrain/floor/power_sector_floor.png"),
+            (AtlasLifeSupport, "res://game/Textures/terrain/floor/support_sector_floor.png"),
+            (AtlasAirlockStorage, "res://game/Textures/terrain/floor/airlock_and_storage_sector_floor.png"),
+            (AtlasCommunication, "res://game/Textures/terrain/floor/communication_sector_floor.png"),
         };
 
         var atlas = Image.CreateEmpty(4 * TileSize, 3 * TileSize, false, Image.Format.Rgba8);
@@ -336,7 +328,6 @@ public partial class MapView : Node2D
         {
             CellKind.Wall => AtlasWall,
             CellKind.Door => AtlasDoor,
-            CellKind.FacilitySlot => AtlasFacilitySlot,
             CellKind.Floor => map.GetZone(cell) switch
             {
                 ZoneId.Living => AtlasLiving,

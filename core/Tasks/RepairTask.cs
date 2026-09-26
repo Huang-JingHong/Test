@@ -1,145 +1,53 @@
 using RelayStation.Core.Characters;
 using RelayStation.Core.Facilities;
+using RelayStation.Core.Items;
 
 namespace RelayStation.Core.Tasks;
 
 /*****
-Date: 2026-09-06
+Date: 2026-09-25
 Name: RepairTask
-Description: 修复任务（阶段一唯一任务类型）；目标为损坏设施，按剩余游戏分钟推进（受角色专长效率加成影响，由 Simulation 计算），完成后设施转为 Operational。
+Description: 修复任务；目标为损坏设施，完成后设施转为 Operational。公共机制（进度推进、实时零件消耗、多人协作、优先级）由基类 FacilityWorkTask 提供，本类只表达「修复」的专长与状态迁移语义。
 *****/
-public sealed class RepairTask : ITask
+public sealed class RepairTask : FacilityWorkTask
 {
     /*****
-    Date: 2026-09-06
-    Name: _remainingGameMinutes
-    Description: 剩余修复所需游戏分钟。
-    *****/
-    private double _remainingGameMinutes;
-
-    /*****
-    Date: 2026-09-06
-    Name: Target
-    Description: 任务目标设施。
-    *****/
-    public FacilitySim? Target { get; }
-
-    /*****
-    Date: 2026-09-06
-    Name: State
-    Description: 任务当前状态；构造即 Pending。
-    *****/
-    public TaskState State { get; private set; } = TaskState.Pending;
-
-    /*****
-    Date: 2026-09-06
-    Name: Assignee
-    Description: 当前认领本任务的角色；未被认领时为 null。
-    *****/
-    public CharacterSim? Assignee { get; private set; }
-
-    /*****
-    Date: 2026-09-06
-    Name: RemainingGameMinutes
-    Description: 剩余完成所需的游戏分钟数。
-    *****/
-    public double RemainingGameMinutes => _remainingGameMinutes;
-
-    /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: RequiredSpecialty
     Description: 修复任务属维修专长。
     *****/
-    public Specialty? RequiredSpecialty => Specialty.Maintenance;
+    public override Specialty? RequiredSpecialty => Specialty.Maintenance;
 
     /*****
-    Date: 2026-09-06
-    Name: StateChanged
-    Description: 任务状态变更时触发的事件（参数：任务本体、新状态）。
-    *****/
-    public event Action<ITask, TaskState>? StateChanged;
-
-    /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: RepairTask
-    Description: 构造函数；target 为目标设施，repairGameMinutes 为基准修复耗时（由设施定义提供，引擎外测试可直接指定）。
+    Description: 构造函数；target 为目标设施，repairGameMinutes 为基准修复耗时，repairPartsCost 为全程零件消耗（默认 0 不消耗），partsItem 为从主工背包扣除的零件物品定义（默认 null 不扣件；开发者模式与引擎外测试不注入），maxWorkers 为最大投入人数（默认 1 单人），priority 为任务优先级（默认 5 档）。
     *****/
-    public RepairTask(FacilitySim target, double repairGameMinutes)
+    public RepairTask(FacilitySim target, double repairGameMinutes,
+        int repairPartsCost = 0, IItemDef? partsItem = null, int maxWorkers = 1,
+        TaskPriority priority = TaskPriority.P5)
+        : base(target, repairGameMinutes, repairPartsCost, partsItem, maxWorkers, priority)
     {
-        Target = target;
-        _remainingGameMinutes = repairGameMinutes;
     }
 
     /*****
-    Date: 2026-09-06
-    Name: CanAssign
-    Description: 空闲角色可认领处于 Pending 状态的本任务。
+    Date: 2026-09-25
+    Name: OnWorkStarted
+    Description: 开始修复：设施转入维修中。
     *****/
-    public bool CanAssign(CharacterSim c)
-        => State == TaskState.Pending && c.State == CharacterState.Idle;
+    protected override void OnWorkStarted() => Target?.SetState(FacilityState.UnderRepair);
 
     /*****
-    Date: 2026-09-06
-    Name: MarkAssigned
-    Description: 标记任务被指定角色认领（Pending → Assigned）。
+    Date: 2026-09-25
+    Name: OnWorkCompleted
+    Description: 修复完成：设施转为运行。
     *****/
-    public void MarkAssigned(CharacterSim assignee)
-    {
-        if (State != TaskState.Pending) return;
-        Assignee = assignee;
-        SetState(TaskState.Assigned);
-    }
+    protected override void OnWorkCompleted() => Target?.SetState(FacilityState.Operational);
 
     /*****
-    Date: 2026-09-06
-    Name: MarkCancelled
-    Description: 取消任务（未结状态 → Cancelled；Done / Cancelled 终态忽略）。先触发状态事件（此时 Assignee 仍可被任务板读取以释放角色），再清理认领人。
+    Date: 2026-09-25
+    Name: OnWorkCancelled
+    Description: 修复被取消（如作业格不可达）：设施回滚到发起前状态（通常为损坏），避免卡在维修中无法再次修复。
     *****/
-    public void MarkCancelled()
-    {
-        if (State is TaskState.Done or TaskState.Cancelled) return;
-        SetState(TaskState.Cancelled);
-        Assignee = null;
-    }
-
-    /*****
-    Date: 2026-09-06
-    Name: StartWork
-    Description: 开始执行（Assigned → InProgress），目标设施转入维修中。
-    *****/
-    public void StartWork()
-    {
-        if (State != TaskState.Assigned) return;
-        SetState(TaskState.InProgress);
-        Target?.SetState(FacilityState.UnderRepair);
-    }
-
-    /*****
-    Date: 2026-09-06
-    Name: ProgressWork
-    Description: 按给定游戏分钟扣减剩余量；归零时任务完成（→ Done）且设施转 Operational，返回 true；仅在 InProgress 状态有效。
-    *****/
-    public bool ProgressWork(double gameMinutes)
-    {
-        if (State != TaskState.InProgress) return false;
-        _remainingGameMinutes -= gameMinutes;
-        if (_remainingGameMinutes > 0) return false;
-
-        _remainingGameMinutes = 0;
-        SetState(TaskState.Done);
-        Target?.SetState(FacilityState.Operational);
-        return true;
-    }
-
-    /*****
-    Date: 2026-09-06
-    Name: SetState
-    Description: 迁移任务状态并触发 StateChanged 事件。
-    *****/
-    private void SetState(TaskState newState)
-    {
-        if (State == newState) return;
-        State = newState;
-        StateChanged?.Invoke(this, newState);
-    }
+    protected override void OnWorkCancelled() => Target?.SetState(PriorState);
 }

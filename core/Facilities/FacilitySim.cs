@@ -38,6 +38,13 @@ public sealed class FacilitySim
     public Vector2I Size => Def?.Size ?? new Vector2I(2, 2);
 
     /*****
+    Date: 2026-09-26
+    Name: BlocksMovement
+    Description: 是否阻挡角色通行（取自 Def.BlocksMovement，Def 缺省为 true；可经构造参数覆盖以供引擎外测试）。false 表示角色可直接走到本设施格上。
+    *****/
+    public bool BlocksMovement { get; }
+
+    /*****
     Date: 2026-09-06
     Name: StateChanged
     Description: 设施状态变更时触发的事件（参数：设施本体、新状态）。
@@ -45,15 +52,16 @@ public sealed class FacilitySim
     public event Action<FacilitySim, FacilityState>? StateChanged;
 
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-26
     Name: FacilitySim
-    Description: 构造函数；以指定定义与占地原点创建设施。
+    Description: 构造函数；以指定定义与占地原点创建设施。blocksMovement 显式传入时覆盖定义中的阻挡设置（null 表示取 Def.BlocksMovement，缺省 true）。
     *****/
-    public FacilitySim(FacilityDef? def, Vector2I originCell)
+    public FacilitySim(FacilityDef? def, Vector2I originCell, bool? blocksMovement = null)
     {
         Def = def;
         OriginCell = originCell;
         State = def?.InitialState ?? FacilityState.Damaged;
+        BlocksMovement = blocksMovement ?? def?.BlocksMovement ?? true;
     }
 
     /*****

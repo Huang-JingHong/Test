@@ -51,21 +51,22 @@ public partial class TimeBar : PanelContainer
     }
 
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: BuildControls
-    Description: 构建水平布局：时钟标签、暂停按钮与三个倍速按钮并接线。
+    Description: 构建紧凑水平布局：时钟标签、暂停按钮与三个倍速按钮并接线（紧凑尺寸以适配右上角区域）。
     *****/
     private void BuildControls()
     {
         var box = new HBoxContainer();
-        box.AddThemeConstantOverride("separation", 8);
+        box.AddThemeConstantOverride("separation", 4);
         AddChild(box);
 
         _clockLabel = new Label
         {
             Text = "第 1 天 00:00",
-            CustomMinimumSize = new Vector2(150, 0),
+            CustomMinimumSize = new Vector2(120, 0),
         };
+        _clockLabel.AddThemeFontSizeOverride("font_size", 14);
         box.AddChild(_clockLabel);
 
         _pauseButton = MakeToggleButton("暂停");
@@ -82,12 +83,16 @@ public partial class TimeBar : PanelContainer
     }
 
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: MakeToggleButton
-    Description: 创建统一样式的切换按钮。
+    Description: 创建统一样式的紧凑切换按钮。
     *****/
     private static Button MakeToggleButton(string text)
-        => new() { Text = text, ToggleMode = true, CustomMinimumSize = new Vector2(56, 32) };
+    {
+        var button = new Button { Text = text, ToggleMode = true, CustomMinimumSize = new Vector2(40, 24) };
+        button.AddThemeFontSizeOverride("font_size", 12);
+        return button;
+    }
 
     /*****
     Date: 2026-09-06

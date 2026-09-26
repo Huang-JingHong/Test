@@ -1,4 +1,5 @@
 using Godot;
+using RelayStation.Core.Facilities;
 using RelayStation.Core.Tasks;
 
 namespace RelayStation.Core.Characters;
@@ -7,9 +8,17 @@ namespace RelayStation.Core.Characters;
 Date: 2026-09-06
 Name: CharacterSim
 Description: 角色模拟对象；持有角色定义、行为状态、所在格、当前任务、寻路路径与效率倍率等运行时数据。状态迁移由 Simulation 驱动，表现层只读并订阅 StateChanged 事件。
+2026-09-26 增补「人物中止」支持：被中止时把当时手上的任务实例加入忽略清单，认领择优（TaskBoard.PickFor）据此跳过这些任务，直到玩家对该设施重新下达指令（Simulation.ClearIgnoredTasksFor）；紧急任务不受忽略影响。
 *****/
 public sealed class CharacterSim
 {
+    /*****
+    Date: 2026-09-26
+    Name: _ignoredTasks
+    Description: 被本角色「暂时忽略」的任务实例（人物中止的那一刻手上的任务）；只按实例比对——同一设施重新发布任务是新实例，不受影响。
+    *****/
+    private readonly HashSet<ITask> _ignoredTasks = new();
+
     /*****
     Date: 2026-09-06
     Name: Def
@@ -46,6 +55,35 @@ public sealed class CharacterSim
     public float WorkSpeedMultiplier { get; }
 
     /*****
+    Date: 2026-09-26
+    Name: MaxHealth
+    Description: 生命值上限（0~100）；当前为固定常量，后续如需按体质/装备差异化再迁到 CharacterDef。
+    *****/
+    public const float MaxHealth = 100f;
+
+    /*****
+    Date: 2026-09-26
+    Name: Health
+    Description: 当前生命值（0~MaxHealth），初始满值；本阶段仅数值与 UI 显示，伤害来源与死亡结算后续接入（写入方为存档恢复与 ApplyHealthDelta）。
+    *****/
+    public float Health { get; internal set; } = MaxHealth;
+
+    /*****
+    Date: 2026-09-26
+    Name: ApplyHealthDelta
+    Description: 施加生命值增减（正数治疗、负数受伤），结果夹在 0~MaxHealth 之间；供后续伤害/治疗系统与测试使用。
+    *****/
+    public void ApplyHealthDelta(float delta)
+        => Health = Math.Clamp(Health + delta, 0f, MaxHealth);
+
+    /*****
+    Date: 2026-09-26
+    Name: Inventory
+    Description: 角色背包与装备；容量按「基础负重（Def.BaseCarryCapacityKg，缺省 15kg）+ 已装备容器容量」校验，只管重量不涉及体积。构造时为空背包（无物品、无装备），内容经 Simulation 的写入口或存档恢复填充。
+    *****/
+    public CharacterInventory Inventory { get; }
+
+    /*****
     Date: 2026-09-06
     Name: Path
     Description: 当前寻路路径（含起点与终点）；不在移动状态时为 null。
@@ -67,6 +105,13 @@ public sealed class CharacterSim
     public float CellProgress { get; internal set; }
 
     /*****
+    Date: 2026-09-26
+    Name: IsManualMove
+    Description: 本次移动是否由玩家手动下达（右键点地）；为 true 时抵达终点后回 Idle 重新找活，而非进入作业。
+    *****/
+    public bool IsManualMove { get; internal set; }
+
+    /*****
     Date: 2026-09-06
     Name: StateChanged
     Description: 角色行为状态变更时触发的事件（参数：角色本体、新状态）。
@@ -83,6 +128,7 @@ public sealed class CharacterSim
         Def = def;
         Cell = spawnCell;
         WorkSpeedMultiplier = def?.SpecialtyMultiplier ?? 1f;
+        Inventory = new CharacterInventory(def?.BaseCarryCapacityKg ?? CharacterDef.DefaultBaseCarryCapacityKg);
     }
 
     /*****
@@ -103,8 +149,38 @@ public sealed class CharacterSim
         Path = path;
         PathIndex = 1;
         CellProgress = 0f;
+        IsManualMove = false; // 缺省为任务驱动；手动移动由 Simulation.OrderMove 在调用后置位
         SetState(CharacterState.Moving);
     }
+
+    /*****
+    Date: 2026-09-26
+    Name: IsIgnoring
+    Description: 本角色当前是否把指定任务实例列入「暂时忽略」（人物中止的产物）；由 TaskBoard.PickFor 在择优时查询（紧急任务另作 bypass）。
+    *****/
+    public bool IsIgnoring(ITask task) => _ignoredTasks.Contains(task);
+
+    /*****
+    Date: 2026-09-26
+    Name: IgnoreTask
+    Description: 把任务实例加入忽略清单（由 Simulation 在人物中止时调用）。
+    *****/
+    internal void IgnoreTask(ITask task) => _ignoredTasks.Add(task);
+
+    /*****
+    Date: 2026-09-26
+    Name: ClearIgnoredTasks
+    Description: 清空忽略清单（人物每次中止时先清后加，避免忽略项无限累积）。
+    *****/
+    internal void ClearIgnoredTasks() => _ignoredTasks.Clear();
+
+    /*****
+    Date: 2026-09-26
+    Name: ClearIgnoredTasksFor
+    Description: 清除忽略清单中目标为指定设施的任务（玩家对该设施重新下达指令时调用），使该任务重新参与优先级排队。
+    *****/
+    internal void ClearIgnoredTasksFor(FacilitySim target)
+        => _ignoredTasks.RemoveWhere(t => ReferenceEquals(t.Target, target));
 
     /*****
     Date: 2026-09-06

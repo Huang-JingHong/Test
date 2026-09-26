@@ -106,6 +106,36 @@ public sealed class GameClockTests
     }
 
     /*****
+    Date: 2026-09-25
+    Name: SetTotalGameMinutes_ThenAdvance_ContinuesFromInjectedValue
+    Description: 注入总分钟后继续推进：分钟数从注入值累加，分钟事件按注入后的整分钟边界触发（读档恢复场景）。
+    *****/
+    [Fact]
+    public void SetTotalGameMinutes_ThenAdvance_ContinuesFromInjectedValue()
+    {
+        var clock = new GameClock();
+        clock.SetTotalGameMinutes(9.5);
+        clock.Advance(1.0);
+        Assert.Equal(10.5, clock.TotalGameMinutes, 5);
+    }
+
+    /*****
+    Date: 2026-09-25
+    Name: SetTotalGameMinutes_DoesNotFireMinuteEvent
+    Description: 注入总分钟不触发分钟事件。
+    *****/
+    [Fact]
+    public void SetTotalGameMinutes_DoesNotFireMinuteEvent()
+    {
+        var clock = new GameClock();
+        int fired = 0;
+        clock.GameMinuteElapsed += _ => fired++;
+        clock.SetTotalGameMinutes(100.0);
+        Assert.Equal(0, fired);
+        Assert.Equal(100.0, clock.TotalGameMinutes, 5);
+    }
+
+    /*****
     Date: 2026-09-06
     Name: SetSpeed_InvalidValue_Throws
     Description: 非 1/2/4 的倍速值抛出 ArgumentOutOfRangeException。

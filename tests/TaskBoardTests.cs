@@ -138,10 +138,10 @@ public sealed class TaskBoardTests
         Assert.Equal(TaskState.InProgress, task.State);
         Assert.Equal(FacilityState.UnderRepair, facility.State);
 
-        Assert.False(task.ProgressWork(6));
+        Assert.False(task.ProgressWork(character, 6));
         Assert.Equal(4, task.RemainingGameMinutes, 5);
 
-        Assert.True(task.ProgressWork(6));
+        Assert.True(task.ProgressWork(character, 6));
         Assert.Equal(TaskState.Done, task.State);
         Assert.Equal(FacilityState.Operational, facility.State);
         Assert.Empty(board.Pending);

@@ -31,3 +31,10 @@ Name: CharacterStateChangedEvent
 Description: 角色状态变更事件；角色行为状态机迁移（待机/移动/作业/被打断）时发布。
 *****/
 public sealed record CharacterStateChangedEvent(CharacterSim Character, CharacterState NewState) : IGameEvent;
+
+/*****
+Date: 2026-09-26
+Name: NeedsChangedEvent
+Description: 角色需求推进事件；需求系统每推进一次（每游戏分钟）发布，携带推进后的八项需求快照，供 UI 刷新数值显示（读档恢复不发布）。
+*****/
+public sealed record NeedsChangedEvent(CharacterSim Character, NeedSnapshot Needs) : IGameEvent;

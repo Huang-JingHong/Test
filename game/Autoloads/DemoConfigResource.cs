@@ -25,4 +25,25 @@ public partial class DemoConfigResource : Resource
     Description: 登场设施定义数组。
     *****/
     [Export] public FacilityDef[] Facilities { get; set; } = Array.Empty<FacilityDef>();
+
+    /*****
+    Date: 2026-09-25
+    Name: StartingParts
+    Description: 新游戏初始备用零件数量（占位资源系统）。
+    *****/
+    [Export] public int StartingParts { get; set; } = 100;
+
+    /*****
+    Date: 2026-09-26
+    Name: StartingFood
+    Description: 新游戏初始食物（压缩干粮）数量，散落到地上随机地板格；需求驱动的自动取用的来源。
+    *****/
+    [Export] public int StartingFood { get; set; } = 20;
+
+    /*****
+    Date: 2026-09-26
+    Name: StartingWater
+    Description: 新游戏初始饮用水数量，散落到地上随机地板格。
+    *****/
+    [Export] public int StartingWater { get; set; } = 20;
 }

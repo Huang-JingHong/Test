@@ -55,58 +55,58 @@ public sealed class RingMapData
 }
 
 /*****
-Date: 2026-09-06
+Date: 2026-09-25
 Name: RingMapGenerator
-Description: 环形基地地图生成器（方案 A：环形格子近似）；在 48×48 网格上按「到中心距离」生成 3 格宽环状走廊，五个功能区沿环按 72° 均布、向外扩展为局部加宽舱室（外飘至 r≈23 格），并为每个功能区计算 2×2 设施锚点与出生格。
+Description: 环形基地地图生成器（方案 A：环形格子近似）；在 MapSize×MapSize 网格上按「到中心距离」生成 3 格宽环状走廊，五个功能区沿环按 72° 均布、向外扩展为局部加宽舱室，并为每个功能区计算 2×2 设施锚点与出生格。空间站本体为固定基准尺寸（半径 16~24 格），不随地图边长变化——扩大地图只增加外围真空区域（可玩格子数变多），环外由生成器 else 分支自然填充为 Vacuum。
 *****/
 public static class RingMapGenerator
 {
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: MapSize
-    Description: 地图边长（格）。
+    Description: 地图边长（格）；即整张地图的格子范围（当前 72×72）。空间站本体的半径参数与该值无关，放大地图不会放大空间站。
     *****/
-    public const int MapSize = 48;
+    public const int MapSize = 72;
 
     /*****
     Date: 2026-09-06
     Name: Center
-    Description: 中心点坐标（浮点格坐标，位于地图几何中心）。
+    Description: 中心点坐标（浮点格坐标，位于地图几何中心）；空间站以此为中心，环外为真空。
     *****/
     public const float Center = (MapSize - 1) / 2f;
 
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: CorridorInnerRadius
-    Description: 走廊内缘半径（r < 此值为内墙或中心真空）。
+    Description: 走廊内缘半径（r < 此值为内墙或中心真空）；空间站基准尺寸，恒定 16 格。
     *****/
     public const float CorridorInnerRadius = 16f;
 
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: CorridorOuterRadius
-    Description: 走廊外缘半径（走廊带宽 [16,19)，宽 3 格）。
+    Description: 走廊外缘半径（走廊带宽 [内缘, 外缘)，3 格宽）；恒定 19 格。
     *****/
     public const float CorridorOuterRadius = 19f;
 
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: HullOuterRadius
-    Description: 外壳墙外缘半径（外壳墙带 [19,20)）。
+    Description: 外壳墙外缘半径；恒定 20 格。
     *****/
     public const float HullOuterRadius = 20f;
 
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: RoomOuterRadius
-    Description: 舱室外缘半径（舱室自走廊向外加宽至 r=23）。
+    Description: 舱室外缘半径（舱室自走廊向外加宽至此）；恒定 23 格。
     *****/
     public const float RoomOuterRadius = 23f;
 
     /*****
-    Date: 2026-09-06
+    Date: 2026-09-25
     Name: RoomWallOuterRadius
-    Description: 舱室外墙外缘半径（舱室外墙带 [23,24)）。
+    Description: 舱室外墙外缘半径；恒定 24 格。超出此半径即为真空（扩大地图只增加真空区域）。
     *****/
     public const float RoomWallOuterRadius = 24f;
 
@@ -199,7 +199,7 @@ public static class RingMapGenerator
             }
         }
 
-        // 先为所有功能区计算设施锚点并标记 FacilitySlot，再收集房间信息（避免标记影响查询）
+        // 先为所有功能区计算设施锚点，再收集房间信息（锚点仅记录坐标；设备放置后由 Simulation 动态维护占地阻挡）
         var anchors = new Dictionary<ZoneId, Vector2I>();
         foreach ((ZoneId zone, _) in ZoneAngles)
         {
@@ -207,7 +207,6 @@ public static class RingMapGenerator
             if (anchor is { } a)
             {
                 anchors[zone] = a;
-                MarkFacilitySlot(map, a);
             }
         }
 
@@ -303,22 +302,6 @@ public static class RingMapGenerator
             }
         }
         return true;
-    }
-
-    /*****
-    Date: 2026-09-06
-    Name: MarkFacilitySlot
-    Description: 将以 origin 为原点的 2×2 区块标记为设施占位格。
-    *****/
-    private static void MarkFacilitySlot(GridMap map, Vector2I origin)
-    {
-        for (int dy = 0; dy < 2; dy++)
-        {
-            for (int dx = 0; dx < 2; dx++)
-            {
-                map.SetCell(new Vector2I(origin.X + dx, origin.Y + dy), CellKind.FacilitySlot);
-            }
-        }
     }
 
     /*****

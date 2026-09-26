@@ -62,6 +62,13 @@ public sealed class GameClock : IGameClock
     }
 
     /*****
+    Date: 2026-09-25
+    Name: SetTotalGameMinutes
+    Description: 直接设置累计游戏分钟总数（读档恢复时钟进度用）；不触发 GameMinuteElapsed 事件。
+    *****/
+    public void SetTotalGameMinutes(double totalGameMinutes) => _totalGameMinutes = totalGameMinutes;
+
+    /*****
     Date: 2026-09-06
     Name: Advance
     Description: 按现实秒数推进游戏时间：游戏分钟 += 现实秒数 × 倍速；每跨过 1 个整分钟边界触发一次 GameMinuteElapsed。暂停或非正数输入时不推进。

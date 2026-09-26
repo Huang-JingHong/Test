@@ -27,11 +27,30 @@ public sealed class GridPathfinding : IPathfinding
     private readonly IGridMap _map;
 
     /*****
-    Date: 2026-09-06
-    Name: GridPathfinding
-    Description: 构造函数；基于指定格子地图创建寻路器。
+    Date: 2026-09-25
+    Name: _blocked
+    Description: 额外阻塞判定（如设施占地动态阻挡，设施移除 CellKind.FacilitySlot 后由 Simulation 维护占地集注入）；null 表示无额外阻挡（引擎外测试兼容）。
     *****/
-    public GridPathfinding(IGridMap map) => _map = map;
+    private readonly Func<Vector2I, bool>? _blocked;
+
+    /*****
+    Date: 2026-09-25
+    Name: GridPathfinding
+    Description: 构造函数；基于指定格子地图创建寻路器，可选注入额外阻塞判定（通行 = 地形可通行且未被阻塞）。
+    *****/
+    public GridPathfinding(IGridMap map, Func<Vector2I, bool>? blocked = null)
+    {
+        _map = map;
+        _blocked = blocked;
+    }
+
+    /*****
+    Date: 2026-09-25
+    Name: IsPassable
+    Description: 综合通行判定：地形可通行且未被额外阻塞。
+    *****/
+    private bool IsPassable(Vector2I cell)
+        => _map.IsWalkable(cell) && (_blocked == null || !_blocked(cell));
 
     /*****
     Date: 2026-09-06
@@ -40,7 +59,7 @@ public sealed class GridPathfinding : IPathfinding
     *****/
     public IReadOnlyList<Vector2I> FindPath(Vector2I from, Vector2I to)
     {
-        if (!_map.IsWalkable(from) || !_map.IsWalkable(to)) return Array.Empty<Vector2I>();
+        if (!IsPassable(from) || !IsPassable(to)) return Array.Empty<Vector2I>();
         if (from == to) return new[] { from };
 
         var cameFrom = new Dictionary<Vector2I, Vector2I>();
@@ -58,7 +77,7 @@ public sealed class GridPathfinding : IPathfinding
             foreach (Vector2I offset in NeighborOffsets)
             {
                 Vector2I next = current + offset;
-                if (!_map.IsWalkable(next)) continue;
+                if (!IsPassable(next)) continue;
 
                 double tentative = gScore[current] + 1;
                 if (tentative < gScore.GetValueOrDefault(next, double.PositiveInfinity))

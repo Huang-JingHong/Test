@@ -11,9 +11,9 @@ using RelayStation.Game.Map;
 namespace RelayStation.Game.UI;
 
 /*****
-Date: 2026-09-06
+Date: 2026-09-25
 Name: DebugOverlay
-Description: 开发期调试浮层；显示鼠标格子坐标、地形与功能区归属，订阅事件总线滚动打印任务/设施/角色关键事件日志（仅开发期，验收后可隐藏）。
+Description: 开发期调试浮层；显示鼠标格子坐标、地形与功能区归属，订阅事件总线滚动打印任务/设施/角色关键事件日志。默认隐藏，按 F3 切换显隐（左上角让位于游戏菜单栏）。
 *****/
 public partial class DebugOverlay : VBoxContainer
 {
@@ -23,6 +23,30 @@ public partial class DebugOverlay : VBoxContainer
     Description: 事件日志最多保留行数。
     *****/
     private const int MaxLogLines = 8;
+
+    /*****
+    Date: 2026-09-25
+    Name: DebugOverlay
+    Description: 构造函数；默认隐藏（F3 切换）。
+    *****/
+    public DebugOverlay()
+    {
+        Visible = false;
+    }
+
+    /*****
+    Date: 2026-09-25
+    Name: _Input
+    Description: F3 切换调试浮层显隐。
+    *****/
+    public override void _Input(InputEvent @event)
+    {
+        if (@event is InputEventKey { Pressed: true, Keycode: Key.F3 })
+        {
+            Visible = !Visible;
+            GetViewport().SetInputAsHandled();
+        }
+    }
 
     /*****
     Date: 2026-09-06

@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://gxnt86rhg3g7"]
 
 [ext_resource type="Script" path="res://game/Characters/CharacterAgent.cs" id="1_agent"]
-[ext_resource type="Texture2D" uid="uid://cjpi7gradni6d" path="res://game/Textures/astronaut1_placeholder.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://cjpi7gradni6d" path="res://game/Textures/characters/astronaut1_placeholder.png" id="2_tex"]
 
 [node name="CharacterAgent" type="Node2D"]
 script = ExtResource("1_agent")
